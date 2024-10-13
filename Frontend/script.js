@@ -12,13 +12,36 @@ const modal = document.getElementById('form_modal');
 const formArea = document.getElementById('form_area');
 const closeModalBtn = document.querySelector('.close_modal_btn');
 
-// Event listener for logo creation
+// Event listener for logo creation (POST to /generate)
 createLogoBtn.addEventListener('click', function() {
     const logoText = logoInput.value;
+    const username = "current_user";  // Replace with dynamic username from session
+
     if (logoText) {
-        logoDisplay.textContent = logoText;
-        const logoImageData = createLogoImage(logoText);
-        downloadLogo.href = logoImageData;
+        const requestBody = {
+            username: username,
+            prompt: logoText
+        };
+
+        fetch('http://127.0.0.1:8000/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.image_name) {
+                const imageUrl = `http://127.0.0.1:8000/images/${data.image_name}`;
+                logoDisplay.textContent = logoText;
+                downloadLogo.href = imageUrl;
+                downloadLogo.textContent = "Download Logo";
+            } else {
+                console.error('Logo creation failed:', data);
+            }
+        })
+        .catch(error => console.error('Error:', error));
     }
 });
 
@@ -32,47 +55,74 @@ closeMenuBtn.addEventListener('click', function() {
     sidebarMenu.classList.remove('show');
 });
 
-// Function to create a downloadable logo image
-function createLogoImage(text) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 300;
-    canvas.height = 150;
-
-    // Fill background and set text styles
-    ctx.fillStyle = '#202123';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.fillStyle = '#10a37f';
-    ctx.font = 'bold 24px Poppins';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-    return canvas.toDataURL('image/png');
-}
-
-// Modal functionality for signup and login
+// Modal functionality for signup (POST to /signup)
 signupBtn.addEventListener('click', function() {
     formArea.innerHTML = `
         <h2>Sign Up</h2>
-        <input type="text" placeholder="Enter your username" />
-        <input type="email" placeholder="Enter your email" />
-        <input type="password" placeholder="Enter your password" />
-        <button>Submit</button>
+        <input type="text" placeholder="Enter your username" id="signupUsername"/>
+        <input type="email" placeholder="Enter your email" id="signupEmail"/>
+        <input type="password" placeholder="Enter your password" id="signupPassword"/>
+        <button id="submitSignup">Submit</button>
     `;
     modal.style.display = 'block';
+
+    document.getElementById('submitSignup').addEventListener('click', function() {
+        const username = document.getElementById('signupUsername').value;
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+
+        fetch('http://127.0.0.1:8000/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, email, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert('Signup successful!');
+                modal.style.display = 'none';
+            } else {
+                console.error('Signup failed:', data);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
 });
 
+// Modal functionality for login (POST to /login)
 loginBtn.addEventListener('click', function() {
     formArea.innerHTML = `
         <h2>Login</h2>
-        <input type="text" placeholder="Enter your username or email" />
-        <input type="password" placeholder="Enter your password" />
-        <button>Login</button>
+        <input type="text" placeholder="Enter your username or email" id="loginIdentifier"/>
+        <input type="password" placeholder="Enter your password" id="loginPassword"/>
+        <button id="submitLogin">Login</button>
     `;
     modal.style.display = 'block';
+
+    document.getElementById('submitLogin').addEventListener('click', function() {
+        const identifier = document.getElementById('loginIdentifier').value;
+        const password = document.getElementById('loginPassword').value;
+
+        fetch('http://127.0.0.1:8000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ identifier, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert('Login successful!');
+                modal.style.display = 'none';
+            } else {
+                console.error('Login failed:', data);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
 });
 
 // Close modal
